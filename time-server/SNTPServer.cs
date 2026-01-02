@@ -564,7 +564,7 @@ public class SNTPServer
                     Mode = Mode.Server;
                     PrecisionByte = 0xE7;
                     CopyTimeStamp(offTransmitTimestamp, offOriginateTimestamp);
-                    DateTime dt = DateTime.Now;
+                    DateTime dt = DateTime.UtcNow;
                     ReceiveTimestamp = dt;
                     TransmitTimestamp = dt;
                     SNTPData[offReferenceID] = (byte)'C';

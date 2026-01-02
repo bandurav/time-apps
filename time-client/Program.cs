@@ -4,8 +4,8 @@ namespace ro.bocan.sntpclient
 {
     class Program
     {
-        const string Host = "0.pool.ntp.org";
-        //const string Host = "WIN-ARAF8S50IK1";
+        //const string Host = "0.pool.ntp.org";
+        const string Host = "WIN-ARAF8S50IK1";
         const int TimeOut = 5000;
         static void Main()
         {

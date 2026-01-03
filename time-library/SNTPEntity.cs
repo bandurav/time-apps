@@ -5,11 +5,10 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
-using InDepth.Time;
 
-namespace SntpComponents;
+namespace InDepth.Time;
 
-public class SNTPServer
+public class SNTPEntity
 {
     #region Private stuff
     // SNTP Data Structure Length
@@ -531,6 +530,83 @@ public class SNTPServer
     #endregion
 
     #region Public methods
+    /// <summary>
+    /// Connects to the time server and populates the data structure.
+    ///	It can also update the system time.
+    /// </summary>
+    /// <param name="Host">Address of the NTP server.</param>
+    /// <param name="TimeOut">Time in milliseconds after which the method returns.</param>        
+    public void Connect(string Host, int TimeOut)
+    {
+        try
+        {
+            IPEndPoint listenEP = new IPEndPoint(IPAddress.Any, 123);
+            Socket sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
+            IPHostEntry hostEntry = Dns.GetHostEntry(Host);
+            IPEndPoint sendEP = null;
+            foreach (IPAddress addr in hostEntry.AddressList)
+            {
+                if (addr.AddressFamily == AddressFamily.InterNetwork)
+                {
+                    sendEP = new IPEndPoint(addr, 123);
+                    break;
+                }
+            }
+            if (sendEP == null)
+            {
+                throw new Exception("Cannot resolve address for host " + Host);
+            }
+            EndPoint epSendEP = (EndPoint)sendEP;
+
+            int messageLength = 0;
+            try
+            {
+                sendSocket.Bind(listenEP);
+                Initialize();
+
+                bool messageReceived = false;
+                int elapsedTime = 0;
+
+                // Timeout code
+                while (!messageReceived && (elapsedTime < TimeOut))
+                {
+                    sendSocket.SendTo(SNTPData, SNTPData.Length, SocketFlags.None, sendEP);
+                    // Check if data has been received by the listening socket and is available to be read
+                    if (sendSocket.Available > 0)
+                    {
+                        messageLength = sendSocket.ReceiveFrom(SNTPData, ref epSendEP);
+                        if (!IsResponseValid())
+                        {
+                            throw new Exception($"Host sent an invalid response.");
+                        }
+                        messageReceived = true;
+                        break;
+                    }
+                    // Wait a bit
+                    Thread.Sleep(500);
+                    elapsedTime += 500;
+                }
+                if (!messageReceived)
+                {
+                    throw new TimeoutException($"Host did not respond.");
+                }
+            }
+            catch (SocketException e)
+            {
+                throw new Exception(e.Message);
+            }
+            finally
+            {
+                sendSocket.Close();
+            }
+
+            DestinationTimestamp = GetCurrentTime();
+        }
+        catch (SocketException e)
+        {
+            throw new Exception(e.Message);
+        }
+    }
     /// <summary>
     /// Starts to the time server 
     ///	It can also update the system time.

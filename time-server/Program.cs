@@ -1,9 +1,9 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using SntpComponents;
+using InDepth.Time;
 using static System.Console;
 
-SNTPServer server = new();
+SNTPEntity server = new();
 
 WriteLine("Staring SNTP Server...");
 server.StartService();

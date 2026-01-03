@@ -586,7 +586,12 @@ public class SNTPEntity
     /// </summary>
     private bool IsResponseValid()
     {
-        if (SNTPData.Length < SNTPDataLength || Mode != Mode.Server)
+        Mode md;
+        lock (_dataLock)
+        {
+            md = Mode;
+        }
+        if (md != Mode.Server)
         {
             return false;
         }
@@ -681,13 +686,13 @@ public class SNTPEntity
                     if (sendSocket.Available > 0)
                     {
                         messageLength = sendSocket.ReceiveFrom(TempData, ref epSendEP);
-                        if (!IsResponseValid())
-                        {
-                            throw new Exception($"Host sent an invalid response.");
-                        }
                         lock (_dataLock)
                         {
                             TempData.CopyTo(SNTPData, 0);
+                        }
+                        if (!IsResponseValid())
+                        {
+                            throw new Exception($"Host sent an invalid response.");
                         }
                         messageReceived = true;
                         break;

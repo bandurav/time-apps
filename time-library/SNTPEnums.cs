@@ -1,4 +1,4 @@
-﻿namespace ro.bocan.sntpclient
+﻿namespace InDepth.Time
 {
     /// <summary>
     /// Leap indicator field values

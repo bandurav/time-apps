@@ -14,8 +14,9 @@ public class SNTPEntity
     // SNTP Data Structure Length
     private const byte SNTPDataLength = 48;
 
+    private readonly object _dataLock = new object();
     // SNTP Data Structure (as described in RFC 2030)
-    private readonly byte[] SNTPData = new byte[SNTPDataLength];
+    private byte[] SNTPData = new byte[SNTPDataLength];
 
     // Offset constants for timestamps in the data structure
     private const byte offReferenceID = 12;
@@ -35,7 +36,11 @@ public class SNTPEntity
         // Isolate the two most significant bits
         get
         {
-            byte val = (byte)(SNTPData[0] >> 6);
+            byte val;
+            lock (_dataLock)
+            {
+                val = (byte)(SNTPData[0] >> 6);
+            }
             switch (val)
             {
                 case 0: return LeapIndicator.NoWarning;
@@ -50,22 +55,32 @@ public class SNTPEntity
         {
             switch (value)
             {
-                case LeapIndicator.NoWarning: 
-                    SNTPData[0] = (byte)(SNTPData[0] & 0x3F);
+                case LeapIndicator.NoWarning:
+                    lock (_dataLock)
+                    {
+                        SNTPData[0] = (byte)(SNTPData[0] & 0x3F);
+                    }
                     break;
                 case LeapIndicator.LastMinute61:
-                    SNTPData[0] = (byte)((SNTPData[0] & 0x3F) | 0x40);
+                    lock (_dataLock)
+                    {
+                        SNTPData[0] = (byte)((SNTPData[0] & 0x3F) | 0x40);
+                    }
                     break;
                 case LeapIndicator.LastMinute59:
-                    SNTPData[0] = (byte)((SNTPData[0] & 0x3F) | 0x80);
+                    lock (_dataLock)
+                    {
+                        SNTPData[0] = (byte)((SNTPData[0] & 0x3F) | 0x80);
+                    }
                     break;
                 case LeapIndicator.Alarm:
                 default:
-                    SNTPData[0] = (byte)((SNTPData[0] & 0x3F) | 0xC0);
+                    lock (_dataLock)
+                    {
+                        SNTPData[0] = (byte)((SNTPData[0] & 0x3F) | 0xC0);
+                    }
                     break;
             }
-            byte val = (byte)(SNTPData[0] >> 6);
-
         }
     }
 
@@ -77,13 +92,20 @@ public class SNTPEntity
         // Isolate bits 3 - 5
         get
         {
-            byte val = (byte)((SNTPData[0] & 0x38) >> 3);
+            byte val;
+            lock (_dataLock)
+            {
+                val = (byte)((SNTPData[0] & 0x38) >> 3);
+            }
             return val;
         }
         set
         {
             byte val = (byte)(value << 3);
-            SNTPData[0] = (byte)((SNTPData[0] & 0xC7) | val);
+            lock (_dataLock)
+            {
+                SNTPData[0] = (byte)((SNTPData[0] & 0xC7) | val);
+            }
         }
     }
 
@@ -95,7 +117,11 @@ public class SNTPEntity
         // Isolate bits 0 - 3
         get
         {
-            byte val = (byte)(SNTPData[0] & 0x7);
+            byte val;
+            lock (_dataLock)
+            {
+                val = (byte)(SNTPData[0] & 0x7);
+            }
             switch (val)
             {
                 case 0: goto default;
@@ -139,7 +165,10 @@ public class SNTPEntity
                     val = 0;
                     break;
             }
-            SNTPData[0] = (byte)((SNTPData[0] & 0xF8) | val);
+            lock (_dataLock)
+            {
+                SNTPData[0] = (byte)((SNTPData[0] & 0xF8) | val);
+            }
         }
     }
 
@@ -150,7 +179,11 @@ public class SNTPEntity
     {
         get
         {
-            byte val = (byte)SNTPData[1];
+            byte val;
+            lock (_dataLock)
+            {
+                val = (byte)SNTPData[1];
+            }
             if (val == 0) return Stratum.Unspecified;
             else
                 if (val == 1) return Stratum.PrimaryReference;
@@ -164,16 +197,28 @@ public class SNTPEntity
             switch (value)
             {
                 case Stratum.Unspecified:
-                    SNTPData[1] = 0;
+                    lock (_dataLock)
+                    {
+                        SNTPData[1] = 0;
+                    }
                     break;
                 case Stratum.PrimaryReference:
-                    SNTPData[1] = 1;
+                    lock (_dataLock)
+                    {
+                        SNTPData[1] = 1;
+                    }
                     break;
                 case Stratum.SecondaryReference:
-                    SNTPData[1] = 2;
+                    lock (_dataLock)
+                    {
+                        SNTPData[1] = 2;
+                    }
                     break;
                 default:
-                    SNTPData[1] = 0x10;
+                    lock (_dataLock)
+                    {
+                        SNTPData[1] = 0x10;
+                    }
                     break;
             }
         }
@@ -185,11 +230,19 @@ public class SNTPEntity
     {
         get
         {
-            return SNTPData[2];
+            byte val;
+            lock (_dataLock)
+            {
+                val = SNTPData[2];
+            }
+            return val;
         }
         set
         {
-            SNTPData[2] = value;
+            lock (_dataLock)
+            {
+                SNTPData[2] = value;
+            }
         }
     }
     /// <summary>
@@ -200,7 +253,12 @@ public class SNTPEntity
         get
         {
             // Thanks to Jim Hollenhorst <hollenho@attbi.com>
-            return (uint)(Math.Pow(2, (sbyte)SNTPData[2]));
+            uint val;
+            lock (_dataLock)
+            {
+                val = (uint)(Math.Pow(2, (sbyte)SNTPData[2]));
+            }
+            return val;
         }
     }
     /// <summary>
@@ -210,11 +268,19 @@ public class SNTPEntity
     {
         get
         {
-            return SNTPData[3];
+            byte val;
+            lock (_dataLock)
+            {
+                val = SNTPData[3];
+            }
+            return val;
         }
         set
         {
-            SNTPData[3] = value;
+            lock (_dataLock)
+            {
+                SNTPData[3] = value;
+            }
         }
     }
     /// <summary>
@@ -225,7 +291,12 @@ public class SNTPEntity
         get
         {
             // Thanks to Jim Hollenhorst <hollenho@attbi.com>
-            return (Math.Pow(2, (sbyte)SNTPData[3]));
+            double dval;
+            lock (_dataLock)
+            {
+                dval = (Math.Pow(2, (sbyte)SNTPData[3]));
+            }
+            return dval;
         }
     }
 
@@ -236,18 +307,24 @@ public class SNTPEntity
     {
         get
         {
-            int temp = 0;
-            temp = 256 * (256 * (256 * SNTPData[4] + SNTPData[5]) + SNTPData[6]) + SNTPData[7];
+            int temp;
+            lock (_dataLock)
+            {
+                temp = 256 * (256 * (256 * SNTPData[4] + SNTPData[5]) + SNTPData[6]) + SNTPData[7];
+            }
             return 1000 * (((double)temp) / 0x10000);
         }
         set
         {
             double d = value/1000.0f*0x10000;
             int idd = (int)d;
-            SNTPData[4] = (byte)(sbyte)(idd / 16777216);
-            SNTPData[5] = (byte)((idd / 65536) % 256);
-            SNTPData[6] = (byte)((idd / 256) % 256);
-            SNTPData[7] = (byte)(idd % 256);
+            lock (_dataLock)
+            {
+                SNTPData[4] = (byte)(sbyte)(idd / 16777216);
+                SNTPData[5] = (byte)((idd / 65536) % 256);
+                SNTPData[6] = (byte)((idd / 256) % 256);
+                SNTPData[7] = (byte)(idd % 256);
+            }
         }
     }
 
@@ -258,18 +335,24 @@ public class SNTPEntity
     {
         get
         {
-            int temp = 0;
-            temp = 256 * (256 * (256 * SNTPData[8] + SNTPData[9]) + SNTPData[10]) + SNTPData[11];
+            int temp;
+            lock (_dataLock)
+            {
+                temp = 256 * (256 * (256 * SNTPData[8] + SNTPData[9]) + SNTPData[10]) + SNTPData[11];
+            }
             return 1000 * (((double)temp) / 0x10000);
         }
         set
         {
             double d = value / 1000.0f * 0x10000;
             int idd = (int)d;
-            SNTPData[8] = (byte)(sbyte)(idd / 16777216);
-            SNTPData[9] = (byte)((idd / 65536) % 256);
-            SNTPData[10] = (byte)((idd / 256) % 256);
-            SNTPData[11] = (byte)(idd % 256);
+            lock (_dataLock)
+            {
+                SNTPData[8] = (byte)(sbyte)(idd / 16777216);
+                SNTPData[9] = (byte)((idd / 65536) % 256);
+                SNTPData[10] = (byte)((idd / 256) % 256);
+                SNTPData[11] = (byte)(idd % 256);
+            }
         }
     }
 
@@ -286,19 +369,26 @@ public class SNTPEntity
                 case Stratum.Unspecified:
                     goto case Stratum.PrimaryReference;
                 case Stratum.PrimaryReference:
-                    val += (char)SNTPData[offReferenceID + 0];
-                    val += (char)SNTPData[offReferenceID + 1];
-                    val += (char)SNTPData[offReferenceID + 2];
-                    val += (char)SNTPData[offReferenceID + 3];
+                    lock (_dataLock)
+                    {
+                        val += (char)SNTPData[offReferenceID + 0];
+                        val += (char)SNTPData[offReferenceID + 1];
+                        val += (char)SNTPData[offReferenceID + 2];
+                        val += (char)SNTPData[offReferenceID + 3];
+                    }
                     break;
                 case Stratum.SecondaryReference:
                     switch (VersionNumber)
                     {
                         case 3: // Version 3, Reference ID is an IPv4 address
-                            string Address = SNTPData[offReferenceID + 0].ToString() + "." +
-                                             SNTPData[offReferenceID + 1].ToString() + "." +
-                                             SNTPData[offReferenceID + 2].ToString() + "." +
-                                             SNTPData[offReferenceID + 3].ToString();
+                            string Address;
+                            lock (_dataLock)
+                            {
+                                Address = SNTPData[offReferenceID + 0].ToString() + "." +
+                                          SNTPData[offReferenceID + 1].ToString() + "." +
+                                          SNTPData[offReferenceID + 2].ToString() + "." +
+                                          SNTPData[offReferenceID + 3].ToString();
+                            }
                             try
                             {
                                 IPHostEntry Host = Dns.GetHostEntry(Address);
@@ -445,13 +535,16 @@ public class SNTPEntity
     {
         ulong intpart = 0, fractpart = 0;
 
-        for (int i = 0; i <= 3; i++)
+        lock (_dataLock)
         {
-            intpart = 256 * intpart + SNTPData[offset + i];
-        }
-        for (int i = 4; i <= 7; i++)
-        {
-            fractpart = 256 * fractpart + SNTPData[offset + i];
+            for (int i = 0; i <= 3; i++)
+            {
+                intpart = 256 * intpart + SNTPData[offset + i];
+            }
+            for (int i = 4; i <= 7; i++)
+            {
+                fractpart = 256 * fractpart + SNTPData[offset + i];
+            }
         }
         ulong milliseconds = intpart * 1000 + (fractpart * 1000) / 0x100000000L;
         return milliseconds;
@@ -472,17 +565,19 @@ public class SNTPEntity
         fractpart = ((milliseconds % 1000) * 0x100000000L) / 1000;
 
         ulong temp = intpart;
-        for (int i = 3; i >= 0; i--)
+        lock (_dataLock)
         {
-            SNTPData[offset + i] = (byte)(temp % 256);
-            temp = temp / 256;
-        }
-
-        temp = fractpart;
-        for (int i = 7; i >= 4; i--)
-        {
-            SNTPData[offset + i] = (byte)(temp % 256);
-            temp = temp / 256;
+            for (int i = 3; i >= 0; i--)
+            {
+                SNTPData[offset + i] = (byte)(temp % 256);
+                temp = temp / 256;
+            }
+            temp = fractpart;
+            for (int i = 7; i >= 4; i--)
+            {
+                SNTPData[offset + i] = (byte)(temp % 256);
+                temp = temp / 256;
+            }
         }
     }
 
@@ -507,11 +602,14 @@ public class SNTPEntity
     private void Initialize()
     {
         // Set version number to 4 and Mode to 3 (client)
-        SNTPData[0] = 0x1B;
-        // Initialize all other fields with 0
-        for (int i = 1; i < 48; i++)
+        lock (_dataLock)
         {
-            SNTPData[i] = 0;
+            SNTPData[0] = 0x1B;
+            // Initialize all other fields with 0
+            for (int i = 1; i < 48; i++)
+            {
+                SNTPData[i] = 0;
+            }
         }
         // Initialize the transmit timestamp
         TransmitTimestamp = GetCurrentTime();
@@ -521,9 +619,12 @@ public class SNTPEntity
 
     private void CopyTimeStamp(int offSource,int offDestination)
     {
-        for (int i=0; i<4; i++)
+        lock (_dataLock)
         {
-            SNTPData[offDestination + i] = SNTPData[offSource + i];
+            for (int i = 0; i < 4; i++)
+            {
+                SNTPData[offDestination + i] = SNTPData[offSource + i];
+            }
         }
     }
 
@@ -544,6 +645,7 @@ public class SNTPEntity
             Socket sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             IPHostEntry hostEntry = Dns.GetHostEntry(Host);
             IPEndPoint sendEP = null;
+            byte[] TempData = new byte[SNTPDataLength];
             foreach (IPAddress addr in hostEntry.AddressList)
             {
                 if (addr.AddressFamily == AddressFamily.InterNetwork)
@@ -570,14 +672,22 @@ public class SNTPEntity
                 // Timeout code
                 while (!messageReceived && (elapsedTime < TimeOut))
                 {
-                    sendSocket.SendTo(SNTPData, SNTPData.Length, SocketFlags.None, sendEP);
+                    lock (_dataLock)
+                    {
+                        SNTPData.CopyTo(TempData, 0);
+                    }
+                    sendSocket.SendTo(TempData, TempData.Length, SocketFlags.None, sendEP);
                     // Check if data has been received by the listening socket and is available to be read
                     if (sendSocket.Available > 0)
                     {
-                        messageLength = sendSocket.ReceiveFrom(SNTPData, ref epSendEP);
+                        messageLength = sendSocket.ReceiveFrom(TempData, ref epSendEP);
                         if (!IsResponseValid())
                         {
                             throw new Exception($"Host sent an invalid response.");
+                        }
+                        lock (_dataLock)
+                        {
+                            TempData.CopyTo(SNTPData, 0);
                         }
                         messageReceived = true;
                         break;
@@ -599,7 +709,6 @@ public class SNTPEntity
             {
                 sendSocket.Close();
             }
-
             DestinationTimestamp = GetCurrentTime();
         }
         catch (SocketException e)
@@ -617,6 +726,7 @@ public class SNTPEntity
         Socket recvSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         byte[] raw = new byte[SNTPDataLength];
         Memory<byte> buffer = new Memory<byte>(raw);
+        byte[] TempData = new byte[SNTPDataLength];
 
         try
         {            
@@ -629,12 +739,12 @@ public class SNTPEntity
                 SocketReceiveFromResult recvResult = await recvSocket.ReceiveFromAsync(buffer, listenEP, cts.Token);
                 if (cts.IsCancellationRequested) break;
 
-                //Thread.Sleep(500);
                 if (recvResult.ReceivedBytes==SNTPDataLength)
-                //if (buffer.Length== SNTPDataLength)
                 {
-                    buffer.Span.CopyTo(SNTPData);
-
+                    lock (_dataLock)
+                    {
+                        buffer.Span.CopyTo(SNTPData);
+                    }
                     Stratum = Stratum.PrimaryReference;
                     LeapIndicator = LeapIndicator.Alarm;
                     Mode = Mode.Server;
@@ -643,15 +753,18 @@ public class SNTPEntity
                     DateTime dt = DateTime.UtcNow;
                     ReceiveTimestamp = dt;
                     TransmitTimestamp = dt;
-                    SNTPData[offReferenceID] = (byte)'C';
-                    SNTPData[offReferenceID + 1] = (byte)'O';
-                    SNTPData[offReferenceID + 2] = (byte)'M';
-                    SNTPData[offReferenceID + 3] = (byte)'P';
+                    lock (_dataLock)
+                    {
+                        SNTPData[offReferenceID] = (byte)'C';
+                        SNTPData[offReferenceID + 1] = (byte)'O';
+                        SNTPData[offReferenceID + 2] = (byte)'M';
+                        SNTPData[offReferenceID + 3] = (byte)'P';
+                        SNTPData.CopyTo(TempData, 0);
+                    }
 
-                    recvSocket.SendTo(SNTPData, SNTPData.Length, SocketFlags.None, recvResult.RemoteEndPoint);
+                    recvSocket.SendTo(TempData, TempData.Length, SocketFlags.None, recvResult.RemoteEndPoint);
                 }               
             }
-            DestinationTimestamp = GetCurrentTime();
         }
         catch (SocketException e)
         {

@@ -497,7 +497,7 @@ public class SNTPEntity
         get
         {
             // Thanks to DNH <dnharris@csrlink.net>
-            TimeSpan span = (DestinationTimestamp - OriginateTimestamp) - (ReceiveTimestamp - TransmitTimestamp);
+            TimeSpan span = (DestinationTimestamp - OriginateTimestamp) - (TransmitTimestamp - ReceiveTimestamp);
             return span.TotalMilliseconds;
         }
     }
@@ -750,14 +750,13 @@ public class SNTPEntity
                     {
                         buffer.Span.CopyTo(SNTPData);
                     }
+                    DateTime dt = DateTime.UtcNow;
+                    ReceiveTimestamp = dt;
                     Stratum = Stratum.PrimaryReference;
                     LeapIndicator = LeapIndicator.Alarm;
                     Mode = Mode.Server;
                     PrecisionByte = 0xE7;
                     CopyTimeStamp(offTransmitTimestamp, offOriginateTimestamp);
-                    DateTime dt = DateTime.UtcNow;
-                    ReceiveTimestamp = dt;
-                    TransmitTimestamp = dt;
                     lock (_dataLock)
                     {
                         SNTPData[offReferenceID] = (byte)'C';
@@ -766,7 +765,8 @@ public class SNTPEntity
                         SNTPData[offReferenceID + 3] = (byte)'P';
                         SNTPData.CopyTo(TempData, 0);
                     }
-
+                    dt = DateTime.UtcNow;
+                    TransmitTimestamp = dt;
                     recvSocket.SendTo(TempData, TempData.Length, SocketFlags.None, recvResult.RemoteEndPoint);
                 }               
             }

@@ -604,7 +604,7 @@ public class SNTPEntity
     /// <summary>
     /// Initialize the SNTP client data. Sets up data structure and prepares for connection.
     /// </summary>
-    private void Initialize()
+    private void InitializeClientData()
     {
         // Set version number to 4 and Mode to 3 (client)
         lock (_dataLock)
@@ -669,7 +669,7 @@ public class SNTPEntity
             try
             {
                 sendSocket.Bind(listenEP);
-                Initialize();
+                InitializeClientData();
 
                 bool messageReceived = false;
                 int elapsedTime = 0;
@@ -763,10 +763,13 @@ public class SNTPEntity
                         SNTPData[offReferenceID + 1] = (byte)'O';
                         SNTPData[offReferenceID + 2] = (byte)'M';
                         SNTPData[offReferenceID + 3] = (byte)'P';
-                        SNTPData.CopyTo(TempData, 0);
                     }
                     dt = DateTime.UtcNow;
                     TransmitTimestamp = dt;
+                    lock (_dataLock)
+                    { 
+                        SNTPData.CopyTo(TempData, 0);
+                    }
                     recvSocket.SendTo(TempData, TempData.Length, SocketFlags.None, recvResult.RemoteEndPoint);
                 }               
             }

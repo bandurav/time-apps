@@ -1,11 +1,11 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
-using InDepth.Time;
+using InDepth.Infrastructure.Timing;
 using static System.Console;
 
-SNTPEntity server = new();
+TimeEntity server = new();
 
-WriteLine("Staring SNTP Server...");
+WriteLine("Staring Time Server...");
 server.StartService();
 WriteLine("Server started. Press any key to stop.");
 ReadKey();

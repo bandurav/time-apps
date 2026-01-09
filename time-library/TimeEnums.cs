@@ -1,4 +1,4 @@
-﻿namespace InDepth.Time
+﻿namespace InDepth.Infrastructure.Timing
 {
     /// <summary>
     /// Leap indicator field values

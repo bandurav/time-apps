@@ -6,13 +6,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace InDepth.Time;
+namespace InDepth.Infrastructure.Timing;
 
-public class SNTPEntity
+public class TimeEntity
 {
     #region Private stuff
     // SNTP Data Structure Length
     private const byte SNTPDataLength = 48;
+    private const int TimingUdpPort = 5123;
 
     private readonly object _dataLock = new object();
     // SNTP Data Structure (as described in RFC 2030)
@@ -646,7 +647,7 @@ public class SNTPEntity
     {
         try
         {
-            IPEndPoint listenEP = new IPEndPoint(IPAddress.Any, 123);
+            IPEndPoint listenEP = new IPEndPoint(IPAddress.Any, 0);
             Socket sendSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
             IPHostEntry hostEntry = Dns.GetHostEntry(Host);
             IPEndPoint sendEP = null;
@@ -655,7 +656,7 @@ public class SNTPEntity
             {
                 if (addr.AddressFamily == AddressFamily.InterNetwork)
                 {
-                    sendEP = new IPEndPoint(addr, 123);
+                    sendEP = new IPEndPoint(addr, TimingUdpPort);
                     break;
                 }
             }
@@ -727,7 +728,7 @@ public class SNTPEntity
     /// </summary>
     public async void StartService()
     {
-        IPEndPoint listenEP = new IPEndPoint(IPAddress.Any, 123);
+        IPEndPoint listenEP = new IPEndPoint(IPAddress.Any, TimingUdpPort);
         Socket recvSocket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         byte[] raw = new byte[SNTPDataLength];
         Memory<byte> buffer = new Memory<byte>(raw);

@@ -10,6 +10,8 @@ string Host2 = "DEVELOP2";
 WriteLine("Staring Time Server...");
 server.StartService();
 WriteLine("Server started. Press any key to stop.");
+WriteLine($"Press 1 to connect to {Host1} server");
+WriteLine($"Press 2 to connect to {Host2} server");
 do
 {
     ConsoleKeyInfo key = ReadKey();

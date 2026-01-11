@@ -18,6 +18,7 @@ public class TimeEntity
     private readonly object _dataLock = new object();
     // SNTP Data Structure (as described in RFC 2030)
     private byte[] SNTPData = new byte[SNTPDataLength];
+    private byte[] SNTPClientData = new byte[SNTPDataLength];
 
     // Offset constants for timestamps in the data structure
     private const byte offReferenceID = 12;
@@ -581,6 +582,34 @@ public class TimeEntity
             }
         }
     }
+    /// <summary>
+    /// Set the date part of the SNTP client data
+    /// </summary>
+    /// <param name="offset">Offset at which the date part of the SNTP client data is</param>
+    /// <param name="date">The date</param>
+    private void SetClientDate(byte offset, DateTime date)
+    {
+        ulong intpart = 0, fractpart = 0;
+        DateTime StartOfCentury = new DateTime(1900, 1, 1, 0, 0, 0);    // January 1, 1900 12:00 AM
+
+        ulong milliseconds = (ulong)(date - StartOfCentury).TotalMilliseconds;
+        intpart = milliseconds / 1000;
+        fractpart = ((milliseconds % 1000) * 0x100000000L) / 1000;
+
+        ulong temp = intpart;
+        for (int i = 3; i >= 0; i--)
+        {
+            SNTPClientData[offset + i] = (byte)(temp % 256);
+            temp = temp / 256;
+        }
+        temp = fractpart;
+        for (int i = 7; i >= 4; i--)
+        {
+            SNTPClientData[offset + i] = (byte)(temp % 256);
+            temp = temp / 256;
+        }
+    }
+
 
     /// <summary>
     /// Returns true if received data is valid and if comes from a NTP-compliant time server.
@@ -607,18 +636,16 @@ public class TimeEntity
     /// </summary>
     private void InitializeClientData()
     {
-        // Set version number to 4 and Mode to 3 (client)
-        lock (_dataLock)
+        // Set version number to 4 and Mode to 3 (client
+        SNTPClientData[0] = 0x1B;
+        // Initialize all other fields with 0
+        for (int i = 1; i < 48; i++)
         {
-            SNTPData[0] = 0x1B;
-            // Initialize all other fields with 0
-            for (int i = 1; i < 48; i++)
-            {
-                SNTPData[i] = 0;
-            }
+            SNTPClientData[i] = 0;
         }
         // Initialize the transmit timestamp
-        TransmitTimestamp = GetCurrentTime();
+        DateTime curDt = GetCurrentTime();
+        SetClientDate(offTransmitTimestamp, curDt);
     }
 
     private DateTime GetCurrentTime() => DateTime.Now;
@@ -678,11 +705,7 @@ public class TimeEntity
                 // Timeout code
                 while (!messageReceived && (elapsedTime < TimeOut))
                 {
-                    lock (_dataLock)
-                    {
-                        SNTPData.CopyTo(TempData, 0);
-                    }
-                    sendSocket.SendTo(TempData, TempData.Length, SocketFlags.None, sendEP);
+                    sendSocket.SendTo(SNTPClientData, SNTPClientData.Length, SocketFlags.None, sendEP);
                     // Check if data has been received by the listening socket and is available to be read
                     if (sendSocket.Available > 0)
                     {
